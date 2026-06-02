@@ -3,10 +3,13 @@ import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import EmployeeTimeView from './EmployeeTimeView'
 import VacationReview from './VacationReview'
+import TeamManagement from './TeamManagement'
 
 export default function AdminDashboard({ profile }) {
-  const [tab, setTab] = useState('time') // 'time' | 'vacation'
-  const [employees, setEmployees] = useState([])
+  const [tab, setTab] = useState('time') // 'time' | 'vacation' | 'team'
+  const [org, setOrg] = useState(null)
+  const [members, setMembers] = useState([])
+  const [invitations, setInvitations] = useState([])
   const [punches, setPunches] = useState([])
   const [vacations, setVacations] = useState([])
   const [loading, setLoading] = useState(true)
@@ -17,8 +20,16 @@ export default function AdminDashboard({ profile }) {
 
   async function loadAll() {
     setLoading(true)
-    const [{ data: empData }, { data: punchData }, { data: vacData }] = await Promise.all([
-      supabase.from('profiles').select('*').eq('role', 'employee').order('full_name'),
+    const [
+      { data: orgData },
+      { data: memberData },
+      { data: invData },
+      { data: punchData },
+      { data: vacData },
+    ] = await Promise.all([
+      supabase.from('organizations').select('*').eq('id', profile.org_id).single(),
+      supabase.from('profiles').select('*').eq('org_id', profile.org_id).order('full_name'),
+      supabase.from('invitations').select('*').order('created_at', { ascending: false }),
       supabase
         .from('time_punches')
         .select('*, profiles(full_name, email)')
@@ -29,10 +40,21 @@ export default function AdminDashboard({ profile }) {
         .select('*, profiles!vacation_requests_user_id_fkey(full_name, email)')
         .order('created_at', { ascending: false }),
     ])
-    if (empData) setEmployees(empData)
+    if (orgData) setOrg(orgData)
+    if (memberData) setMembers(memberData)
+    if (invData) setInvitations(invData)
     if (punchData) setPunches(punchData)
     if (vacData) setVacations(vacData)
     setLoading(false)
+  }
+
+  async function reloadTeam() {
+    const [{ data: memberData }, { data: invData }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('org_id', profile.org_id).order('full_name'),
+      supabase.from('invitations').select('*').order('created_at', { ascending: false }),
+    ])
+    if (memberData) setMembers(memberData)
+    if (invData) setInvitations(invData)
   }
 
   async function reviewVacation(id, status, managerComments) {
@@ -56,14 +78,16 @@ export default function AdminDashboard({ profile }) {
     await supabase.auth.signOut()
   }
 
+  const employees = members.filter(m => m.role === 'employee')
   const pendingCount = vacations.filter(v => v.status === 'pending').length
+  const pendingInvites = invitations.filter(i => i.status === 'pending').length
 
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">TimeTracker — Admin</h1>
-          <p className="text-sm text-gray-500">{profile.full_name || profile.email}</p>
+          <h1 className="text-lg font-semibold text-gray-900">{org?.name || 'Admin'}</h1>
+          <p className="text-sm text-gray-500">{profile.full_name || profile.email} · Admin</p>
         </div>
         <button onClick={handleSignOut} className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
           Sign out
@@ -74,7 +98,7 @@ export default function AdminDashboard({ profile }) {
         {/* Stats bar */}
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: 'Employees', value: employees.length },
+            { label: 'Members', value: members.length },
             { label: 'Clocked In Now', value: punches.filter(p => !p.punch_out).length },
             { label: 'Pending Requests', value: pendingCount },
           ].map(stat => (
@@ -90,6 +114,7 @@ export default function AdminDashboard({ profile }) {
           {[
             { key: 'time', label: 'Time Logs' },
             { key: 'vacation', label: `Vacation${pendingCount ? ` (${pendingCount})` : ''}` },
+            { key: 'team', label: `Team${pendingInvites ? ` (${pendingInvites})` : ''}` },
           ].map(t => (
             <button
               key={t.key}
@@ -109,8 +134,15 @@ export default function AdminDashboard({ profile }) {
           </div>
         ) : tab === 'time' ? (
           <EmployeeTimeView employees={employees} punches={punches} />
-        ) : (
+        ) : tab === 'vacation' ? (
           <VacationReview vacations={vacations} onReview={reviewVacation} />
+        ) : (
+          <TeamManagement
+            profile={profile}
+            members={members}
+            invitations={invitations}
+            onChange={reloadTeam}
+          />
         )}
       </main>
     </div>

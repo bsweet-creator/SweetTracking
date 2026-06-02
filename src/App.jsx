@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import AuthPage from './components/auth/AuthPage'
+import Onboarding from './components/onboarding/Onboarding'
 import EmployeeDashboard from './components/employee/EmployeeDashboard'
 import AdminDashboard from './components/admin/AdminDashboard'
+
+// Invite token passed via URL: https://app/?invite=TOKEN
+const inviteToken = new URLSearchParams(window.location.search).get('invite')
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -45,7 +49,7 @@ export default function App() {
           id: userId,
           email: user.email,
           full_name: user.user_metadata?.full_name || '',
-          role: user.user_metadata?.role || 'employee',
+          role: 'employee',
         })
         .select()
         .single()
@@ -54,6 +58,10 @@ export default function App() {
 
     setProfile(data)
     setLoading(false)
+  }
+
+  async function reloadProfile() {
+    if (session) await fetchProfile(session.user.id)
   }
 
   if (loading) {
@@ -74,7 +82,12 @@ export default function App() {
     )
   }
 
-  if (profile?.role === 'admin') return <AdminDashboard profile={profile} />
+  // Authenticated but not yet part of an organization → onboarding
+  if (!profile.org_id) {
+    return <Onboarding profile={profile} inviteToken={inviteToken} onComplete={reloadProfile} />
+  }
+
+  if (profile.role === 'admin') return <AdminDashboard profile={profile} />
 
   return <EmployeeDashboard profile={profile} />
 }

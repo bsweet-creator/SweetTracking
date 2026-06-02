@@ -5,7 +5,7 @@ import toast from 'react-hot-toast'
 export default function AuthPage() {
   const [mode, setMode] = useState('login') // 'login' | 'signup'
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({ email: '', password: '', full_name: '', role: 'employee' })
+  const [form, setForm] = useState({ email: '', password: '', full_name: '' })
 
   function onChange(e) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
@@ -29,7 +29,7 @@ export default function AuthPage() {
     const { error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
-      options: { data: { full_name: form.full_name, role: form.role } },
+      options: { data: { full_name: form.full_name } },
     })
     if (error) toast.error(error.message)
     else toast.success('Account created — you can now sign in.')
@@ -86,21 +86,6 @@ export default function AuthPage() {
               placeholder="••••••••"
             />
           </div>
-
-          {mode === 'signup' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-              <select
-                name="role"
-                value={form.role}
-                onChange={onChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="employee">Employee</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-          )}
 
           <button
             type="submit"

@@ -47,20 +47,28 @@ Under **Authentication → URL Configuration**:
 
 ---
 
-## Common admin tasks (run in Supabase SQL Editor)
+## Onboarding & roles (multi-tenant)
 
-Promote a user to admin:
+The app is multi-org. After signing up, a user lands on an **onboarding** screen and either:
+- **Creates an organization** (becomes that org's admin), or
+- **Joins via an invite link** (`https://app/?invite=TOKEN`) with the role the inviter chose.
+
+Admins invite people from the **Team** tab (generates a shareable link). Data is fully
+isolated per organization via row-level security keyed on `org_id` + the `current_org()`
+and `is_admin()` SECURITY DEFINER functions.
+
+Manually move a user to a different org / role (rarely needed) in the SQL Editor:
 ```sql
 update public.profiles set role = 'admin' where email = 'person@company.com';
 ```
 
-Database schema lives in `SCHEMA.sql`; incremental changes in `MIGRATION_*.sql`.
+Database schema lives in `SCHEMA.sql` (authoritative for fresh projects);
+incremental changes in `MIGRATION_*.sql` (apply in order to an existing project).
 
 ---
 
 ## Known notes
 - **Free Supabase projects auto-pause after ~7 days of zero activity.** Daily team
   use keeps it awake; if it pauses, un-pause from the Supabase dashboard (~1 min, no data loss).
-- **Public signup currently allows choosing the Admin role** — anyone can self-register
-  as an admin. Lock this down before wide distribution (remove the Admin option from
-  the signup form; promote admins manually via the SQL above).
+- Invite links are unguessable tokens and single-use (marked `accepted` once used).
+  Admins can revoke pending invites from the Team tab.
