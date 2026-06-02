@@ -166,6 +166,13 @@ export default function EmployeeDashboard({ profile }) {
         {tab === 'time' && (
           <div className="space-y-6">
             <EmployeeStats punches={punches} />
+            <ClockWidget
+              name={profile.full_name}
+              activePunch={activePunch}
+              punches={punches}
+              onClockIn={handleClockIn}
+              onClockOut={handleClockOut}
+            />
             <PunchHistory
               punches={punches}
               onAdd={() => setEditor({ punch: null })}
@@ -181,15 +188,6 @@ export default function EmployeeDashboard({ profile }) {
             <VacationHistory vacations={vacations} />
           </div>
         )}
-
-        {/* Clock widget */}
-        <ClockWidget
-          name={profile.full_name}
-          activePunch={activePunch}
-          punches={punches}
-          onClockIn={handleClockIn}
-          onClockOut={handleClockOut}
-        />
       </main>
 
       {editor && (
