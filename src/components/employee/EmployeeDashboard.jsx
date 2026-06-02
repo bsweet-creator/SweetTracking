@@ -15,7 +15,6 @@ export default function EmployeeDashboard({ profile }) {
   const [vacations, setVacations] = useState([])
   const [tab, setTab] = useState('time') // 'time' | 'vacation'
   const [editor, setEditor] = useState(null) // null = closed, { punch } = open
-  const [showVacForm, setShowVacForm] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -123,10 +122,9 @@ export default function EmployeeDashboard({ profile }) {
       .insert({ user_id: profile.id, ...formData })
       .select()
       .single()
-    if (error) { toast.error(error.message); return false }
+    if (error) return toast.error(error.message)
     setVacations(prev => [data, ...prev])
     toast.success('Vacation request submitted!')
-    return true
   }
 
   async function handleSignOut() {
@@ -187,16 +185,8 @@ export default function EmployeeDashboard({ profile }) {
         )}
 
         {tab === 'vacation' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-gray-900">Time Off</h2>
-              <button
-                onClick={() => setShowVacForm(true)}
-                className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-sm active:scale-[0.98] transition-all"
-              >
-                + Request time off
-              </button>
-            </div>
+          <div className="space-y-6">
+            <VacationForm profile={profile} onSubmit={submitVacation} />
             <VacationHistory vacations={vacations} />
           </div>
         )}
@@ -208,21 +198,6 @@ export default function EmployeeDashboard({ profile }) {
           onClose={() => setEditor(null)}
           onSave={savePunch}
         />
-      )}
-
-      {showVacForm && (
-        <div
-          className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center p-4 overflow-y-auto"
-          onClick={() => setShowVacForm(false)}
-        >
-          <div className="w-full max-w-lg my-6" onClick={e => e.stopPropagation()}>
-            <VacationForm
-              profile={profile}
-              onSubmit={submitVacation}
-              onClose={() => setShowVacForm(false)}
-            />
-          </div>
-        </div>
       )}
     </div>
   )
