@@ -5,6 +5,7 @@ import { format, differenceInMinutes } from 'date-fns'
 import ClockWidget from './ClockWidget'
 import VacationForm from './VacationForm'
 import PunchHistory from './PunchHistory'
+import PunchEditor from './PunchEditor'
 import VacationHistory from './VacationHistory'
 
 export default function EmployeeDashboard({ profile }) {
@@ -12,6 +13,7 @@ export default function EmployeeDashboard({ profile }) {
   const [punches, setPunches] = useState([])
   const [vacations, setVacations] = useState([])
   const [tab, setTab] = useState('time') // 'time' | 'vacation'
+  const [editor, setEditor] = useState(null) // null = closed, { punch } = open
 
   useEffect(() => {
     loadData()
@@ -64,6 +66,53 @@ export default function EmployeeDashboard({ profile }) {
     setActivePunch(null)
     setPunches(prev => prev.map(p => (p.id === data.id ? data : p)))
     toast.success('Clocked out!')
+  }
+
+  // Recompute which punch (if any) is currently open
+  function syncActive(list) {
+    setActivePunch(list.find(p => !p.punch_out) || null)
+  }
+
+  async function savePunch(values) {
+    if (editor.punch) {
+      // Editing an existing entry
+      const { data, error } = await supabase
+        .from('time_punches')
+        .update({ punch_in: values.punch_in, punch_out: values.punch_out })
+        .eq('id', editor.punch.id)
+        .select()
+        .single()
+      if (error) return toast.error(error.message)
+      const next = punches.map(p => (p.id === data.id ? data : p))
+      setPunches(next)
+      syncActive(next)
+      toast.success('Entry updated')
+    } else {
+      // Adding a manual entry
+      const { data, error } = await supabase
+        .from('time_punches')
+        .insert({ user_id: profile.id, punch_in: values.punch_in, punch_out: values.punch_out })
+        .select()
+        .single()
+      if (error) return toast.error(error.message)
+      const next = [data, ...punches].sort(
+        (a, b) => new Date(b.punch_in) - new Date(a.punch_in)
+      )
+      setPunches(next)
+      syncActive(next)
+      toast.success('Entry added')
+    }
+    setEditor(null)
+  }
+
+  async function deletePunch(punch) {
+    if (!window.confirm('Delete this time entry? This cannot be undone.')) return
+    const { error } = await supabase.from('time_punches').delete().eq('id', punch.id)
+    if (error) return toast.error(error.message)
+    const next = punches.filter(p => p.id !== punch.id)
+    setPunches(next)
+    syncActive(next)
+    toast.success('Entry deleted')
   }
 
   async function submitVacation(formData) {
@@ -120,7 +169,14 @@ export default function EmployeeDashboard({ profile }) {
           ))}
         </div>
 
-        {tab === 'time' && <PunchHistory punches={punches} />}
+        {tab === 'time' && (
+          <PunchHistory
+            punches={punches}
+            onAdd={() => setEditor({ punch: null })}
+            onEdit={punch => setEditor({ punch })}
+            onDelete={deletePunch}
+          />
+        )}
 
         {tab === 'vacation' && (
           <div className="space-y-6">
@@ -129,6 +185,14 @@ export default function EmployeeDashboard({ profile }) {
           </div>
         )}
       </main>
+
+      {editor && (
+        <PunchEditor
+          punch={editor.punch}
+          onClose={() => setEditor(null)}
+          onSave={savePunch}
+        />
+      )}
     </div>
   )
 }

@@ -109,6 +109,7 @@ create policy "punches_select_own"   on public.time_punches for select using (au
 create policy "punches_select_admin" on public.time_punches for select using (public.is_admin());
 create policy "punches_insert_own"   on public.time_punches for insert with check (auth.uid() = user_id);
 create policy "punches_update_own"   on public.time_punches for update using (auth.uid() = user_id);
+create policy "punches_delete_own"   on public.time_punches for delete using (auth.uid() = user_id);
 
 -- Vacation requests: employees manage their own; admins read + update all
 create policy "vacation_select_own"   on public.vacation_requests for select using (auth.uid() = user_id);
