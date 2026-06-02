@@ -1,9 +1,9 @@
 import { format, differenceInCalendarDays } from 'date-fns'
 
 const STATUS = {
-  pending:  { label: 'Pending',  icon: '⏳', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  approved: { label: 'Approved', icon: '✅', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  denied:   { label: 'Rejected', icon: '❌', cls: 'bg-red-50 text-red-600 border-red-200' },
+  pending:  { label: 'Pending',  cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  approved: { label: 'Approved', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  denied:   { label: 'Rejected', cls: 'bg-red-50 text-red-600 border-red-200' },
 }
 
 function dayAt(dateStr) {
@@ -28,7 +28,7 @@ export default function VacationHistory({ vacations }) {
           <p className="text-sm opacity-90 mt-0.5">
             {(() => {
               const d = differenceInCalendarDays(dayAt(upcoming.start_date), today)
-              return d <= 0 ? "You're on leave 🏖️" : d === 1 ? 'Starts tomorrow!' : `In ${d} days`
+              return d <= 0 ? "You're on leave" : d === 1 ? 'Starts tomorrow' : `In ${d} days`
             })()}
           </p>
         </div>
@@ -41,9 +41,8 @@ export default function VacationHistory({ vacations }) {
 
         {!vacations.length ? (
           <div className="px-6 py-10 text-center">
-            <div className="text-3xl mb-2">🌴</div>
             <p className="text-sm text-gray-500">No leave requests yet.</p>
-            <p className="text-xs text-gray-400 mt-1">Need a break? Submit a request above.</p>
+            <p className="text-xs text-gray-400 mt-1">Submit a request above to get started.</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">

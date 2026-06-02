@@ -69,7 +69,7 @@ export default function ClockWidget({ name, activePunch, punches, onClockIn, onC
       {/* Accent gradient header strip */}
       <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 px-6 py-5 text-white">
         <p className="text-sm/none opacity-90">{greeting(now)},</p>
-        <p className="text-xl font-semibold mt-1">{name || 'there'} 👋</p>
+        <p className="text-xl font-semibold mt-1">{name || 'there'}</p>
         <p className="text-xs opacity-80 mt-1">{format(now, 'EEEE, MMMM d · h:mm:ss aa')}</p>
       </div>
 
@@ -101,7 +101,7 @@ export default function ClockWidget({ name, activePunch, punches, onClockIn, onC
               : activePunch ? 'bg-indigo-100 text-indigo-700'
               : 'bg-gray-100 text-gray-500'
             }`}>
-              {complete ? `🎉 Goal reached${overtime ? ` · +${fmtHM(overtime)}` : ''}`
+              {complete ? `Goal reached${overtime ? ` · +${fmtHM(overtime)}` : ''}`
                 : activePunch ? `${pct}% · clocked in`
                 : `${pct}%`}
             </span>

@@ -56,9 +56,9 @@ export default function EmployeeStats({ punches }) {
   const goalY = (GOAL / scale) * CHART_H
 
   const cards = [
-    { label: 'Today',     value: fmtHM(todaySec), chip: 'bg-indigo-100 text-indigo-600',  icon: '⏱️' },
-    { label: 'This week',  value: fmtHM(weekSec),  chip: 'bg-fuchsia-100 text-fuchsia-600', icon: '📅' },
-    { label: 'Day streak', value: `${streak} ${streak === 1 ? 'day' : 'days'}`, chip: 'bg-emerald-100 text-emerald-600', icon: '🔥' },
+    { label: 'Today',      value: fmtHM(todaySec), accent: 'bg-indigo-500' },
+    { label: 'This week',  value: fmtHM(weekSec),  accent: 'bg-violet-500' },
+    { label: 'Day streak', value: `${streak} ${streak === 1 ? 'day' : 'days'}`, accent: 'bg-emerald-500' },
   ]
 
   return (
@@ -66,12 +66,10 @@ export default function EmployeeStats({ punches }) {
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-3">
         {cards.map(c => (
-          <div key={c.label} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
-            <div className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-base ${c.chip}`}>
-              {c.icon}
-            </div>
-            <p className="text-lg sm:text-xl font-bold text-gray-900 mt-2 tabular-nums">{c.value}</p>
-            <p className="text-xs text-gray-500">{c.label}</p>
+          <div key={c.label} className="relative bg-white rounded-2xl border border-gray-200 shadow-sm p-4 overflow-hidden">
+            <span className={`absolute left-0 top-0 h-full w-1 ${c.accent}`} />
+            <p className="text-[11px] uppercase tracking-wide text-gray-400">{c.label}</p>
+            <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1 tabular-nums">{c.value}</p>
           </div>
         ))}
       </div>
