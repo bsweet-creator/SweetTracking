@@ -1,11 +1,22 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
-export default function AuthPage() {
-  const [mode, setMode] = useState('login') // 'login' | 'signup'
+export default function AuthPage({ inviteToken }) {
+  // An invited person should land on sign-up, not login
+  const [mode, setMode] = useState(inviteToken ? 'signup' : 'login')
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ email: '', password: '', full_name: '' })
+  const [inviteOrg, setInviteOrg] = useState(null)
+
+  // If arriving via an invite link, show which org they're joining
+  useEffect(() => {
+    if (!inviteToken) return
+    supabase.rpc('get_invitation', { p_token: inviteToken }).then(({ data }) => {
+      const row = data?.[0]
+      if (row && row.status === 'pending') setInviteOrg(row.org_name)
+    })
+  }, [inviteToken])
 
   function onChange(e) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
@@ -43,6 +54,15 @@ export default function AuthPage() {
         <p className="text-sm text-gray-500 mb-6">
           {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
         </p>
+
+        {inviteOrg && (
+          <div className="mb-6 -mt-2 rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
+            <p className="text-sm text-blue-800">
+              You've been invited to join <span className="font-semibold">{inviteOrg}</span>.
+              Create an account to continue.
+            </p>
+          </div>
+        )}
 
         <form onSubmit={mode === 'login' ? handleLogin : handleSignup} className="space-y-4">
           {mode === 'signup' && (

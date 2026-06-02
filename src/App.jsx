@@ -87,7 +87,7 @@ export default function App() {
     )
   }
 
-  if (!session) return <AuthPage />
+  if (!session) return <AuthPage inviteToken={inviteToken} />
 
   if (!profile) {
     return (
