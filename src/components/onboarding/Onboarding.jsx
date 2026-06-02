@@ -46,6 +46,7 @@ export default function Onboarding({ profile, inviteToken, onComplete }) {
     const { error } = await supabase.rpc('create_organization', { p_name: orgName })
     setBusy(false)
     if (error) return toast.error(error.message)
+    localStorage.removeItem('pendingInvite')
     toast.success(`Created ${orgName.trim()}`)
     await onComplete()
   }
@@ -57,6 +58,7 @@ export default function Onboarding({ profile, inviteToken, onComplete }) {
     const { error } = await supabase.rpc('accept_invitation', { p_token: token })
     setBusy(false)
     if (error) return toast.error(error.message)
+    localStorage.removeItem('pendingInvite')
     toast.success('You have joined the organization!')
     await onComplete()
   }

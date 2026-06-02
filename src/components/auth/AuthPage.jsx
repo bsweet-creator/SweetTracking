@@ -6,6 +6,7 @@ export default function AuthPage() {
   const [mode, setMode] = useState('login') // 'login' | 'signup'
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ email: '', password: '', full_name: '' })
+  const [confirmEmail, setConfirmEmail] = useState(null) // email awaiting confirmation
 
   function onChange(e) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
@@ -18,7 +19,14 @@ export default function AuthPage() {
       email: form.email,
       password: form.password,
     })
-    if (error) toast.error(error.message)
+    if (error) {
+      // Supabase reports unconfirmed accounts as "Invalid login credentials"
+      toast.error(
+        /invalid login/i.test(error.message)
+          ? 'Wrong email/password — or you haven\'t confirmed your email yet. Check your inbox.'
+          : error.message
+      )
+    }
     setLoading(false)
   }
 
@@ -26,15 +34,45 @@ export default function AuthPage() {
     e.preventDefault()
     if (!form.full_name.trim()) return toast.error('Full name is required')
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: { data: { full_name: form.full_name } },
     })
-    if (error) toast.error(error.message)
-    else toast.success('Account created — you can now sign in.')
     setLoading(false)
-    setMode('login')
+    if (error) return toast.error(error.message)
+
+    // If the session is null, email confirmation is required before they can sign in.
+    if (!data.session) {
+      setConfirmEmail(form.email)
+    } else {
+      toast.success('Account created!')
+    }
+  }
+
+  // "Check your email" screen after a signup that needs confirmation
+  if (confirmEmail) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+          <div className="text-4xl mb-3">📬</div>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">Check your email</h1>
+          <p className="text-sm text-gray-600">
+            We sent a confirmation link to <span className="font-medium text-gray-900">{confirmEmail}</span>.
+            Click it to activate your account, then come back here to sign in.
+          </p>
+          <p className="text-xs text-gray-400 mt-3">
+            Don't see it? Check your spam folder — it can take a minute to arrive.
+          </p>
+          <button
+            onClick={() => { setConfirmEmail(null); setMode('login') }}
+            className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg py-2 text-sm transition-colors"
+          >
+            Back to sign in
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
