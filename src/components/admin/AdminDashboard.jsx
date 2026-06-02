@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import EmployeeTimeView from './EmployeeTimeView'
+import Reports from './Reports'
 import VacationReview from './VacationReview'
 import TeamManagement from './TeamManagement'
 
@@ -113,6 +114,7 @@ export default function AdminDashboard({ profile }) {
         <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
           {[
             { key: 'time', label: 'Time Logs' },
+            { key: 'reports', label: 'Reports' },
             { key: 'vacation', label: `Vacation${pendingCount ? ` (${pendingCount})` : ''}` },
             { key: 'team', label: `Team${pendingInvites ? ` (${pendingInvites})` : ''}` },
           ].map(t => (
@@ -134,6 +136,8 @@ export default function AdminDashboard({ profile }) {
           </div>
         ) : tab === 'time' ? (
           <EmployeeTimeView employees={employees} punches={punches} />
+        ) : tab === 'reports' ? (
+          <Reports punches={punches} />
         ) : tab === 'vacation' ? (
           <VacationReview vacations={vacations} onReview={reviewVacation} />
         ) : (

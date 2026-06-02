@@ -47,12 +47,30 @@ export default function AuthPage({ inviteToken }) {
     toast.success('Account created!')
   }
 
+  async function handleForgot(e) {
+    e.preventDefault()
+    if (!form.email.trim()) return toast.error('Enter your email first')
+    setLoading(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
+      redirectTo: window.location.origin,
+    })
+    setLoading(false)
+    if (error) return toast.error(error.message)
+    toast.success('Password reset link sent — check your email')
+    setMode('login')
+  }
+
+  const submitHandler =
+    mode === 'login' ? handleLogin : mode === 'signup' ? handleSignup : handleForgot
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">TimeTracker</h1>
         <p className="text-sm text-gray-500 mb-6">
-          {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
+          {mode === 'login' ? 'Sign in to your account'
+            : mode === 'signup' ? 'Create a new account'
+            : 'Reset your password'}
         </p>
 
         {inviteOrg && (
@@ -64,7 +82,7 @@ export default function AuthPage({ inviteToken }) {
           </div>
         )}
 
-        <form onSubmit={mode === 'login' ? handleLogin : handleSignup} className="space-y-4">
+        <form onSubmit={submitHandler} className="space-y-4">
           {mode === 'signup' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
@@ -92,37 +110,61 @@ export default function AuthPage({ inviteToken }) {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={onChange}
-              required
-              minLength={6}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
-            />
-          </div>
+          {mode !== 'forgot' && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">Password</label>
+                {mode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => setMode('forgot')}
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
+              <input
+                name="password"
+                type="password"
+                value={form.password}
+                onChange={onChange}
+                required
+                minLength={6}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="••••••••"
+              />
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg py-2 text-sm transition-colors"
           >
-            {loading ? 'Please wait…' : mode === 'login' ? 'Sign In' : 'Create Account'}
+            {loading ? 'Please wait…'
+              : mode === 'login' ? 'Sign In'
+              : mode === 'signup' ? 'Create Account'
+              : 'Send reset link'}
           </button>
         </form>
 
         <p className="mt-4 text-center text-sm text-gray-500">
-          {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
-          <button
-            onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-            className="text-blue-600 hover:underline font-medium"
-          >
-            {mode === 'login' ? 'Sign up' : 'Sign in'}
-          </button>
+          {mode === 'forgot' ? (
+            <button onClick={() => setMode('login')} className="text-blue-600 hover:underline font-medium">
+              ← Back to sign in
+            </button>
+          ) : (
+            <>
+              {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
+              <button
+                onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+                className="text-blue-600 hover:underline font-medium"
+              >
+                {mode === 'login' ? 'Sign up' : 'Sign in'}
+              </button>
+            </>
+          )}
         </p>
       </div>
     </div>

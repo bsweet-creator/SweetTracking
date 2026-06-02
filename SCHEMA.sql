@@ -206,3 +206,9 @@ create policy "vacation_update_admin" on public.vacation_requests for update usi
 );
 
 grant select, insert, update, delete on public.organizations, public.invitations to authenticated;
+
+-- Restrict profile UPDATEs to full_name only. role/org_id can change
+-- exclusively through the SECURITY DEFINER functions above, preventing
+-- a user from making themselves an admin.
+revoke update on public.profiles from authenticated;
+grant  update (full_name) on public.profiles to authenticated;
