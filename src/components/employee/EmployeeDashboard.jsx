@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import { format, differenceInMinutes } from 'date-fns'
 import ClockWidget from './ClockWidget'
+import EmployeeStats from './EmployeeStats'
 import VacationForm from './VacationForm'
 import PunchHistory from './PunchHistory'
 import PunchEditor from './PunchEditor'
@@ -172,12 +173,15 @@ export default function EmployeeDashboard({ profile }) {
         </div>
 
         {tab === 'time' && (
-          <PunchHistory
-            punches={punches}
-            onAdd={() => setEditor({ punch: null })}
-            onEdit={punch => setEditor({ punch })}
-            onDelete={deletePunch}
-          />
+          <div className="space-y-6">
+            <EmployeeStats punches={punches} />
+            <PunchHistory
+              punches={punches}
+              onAdd={() => setEditor({ punch: null })}
+              onEdit={punch => setEditor({ punch })}
+              onDelete={deletePunch}
+            />
+          </div>
         )}
 
         {tab === 'vacation' && (
