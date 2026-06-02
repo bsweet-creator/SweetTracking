@@ -34,19 +34,30 @@ export default function App() {
   }, [])
 
   async function fetchProfile(userId) {
+    // Validate the session first. A stale/deleted-user token returns an
+    // error here — in that case sign out and fall back to the login screen
+    // instead of spinning forever.
+    const { data: { user }, error: userErr } = await supabase.auth.getUser()
+    if (userErr || !user) {
+      await supabase.auth.signOut()
+      setSession(null)
+      setProfile(null)
+      setLoading(false)
+      return
+    }
+
     let data = null
     for (let i = 0; i < 5; i++) {
       const { data: row } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
       if (row) { data = row; break }
       await new Promise(r => setTimeout(r, 800))
     }
 
     if (!data) {
-      const { data: { user } } = await supabase.auth.getUser()
       const { data: created } = await supabase
         .from('profiles')
         .insert({
