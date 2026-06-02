@@ -24,7 +24,7 @@ const inputClass =
   'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
-export default function VacationForm({ profile, onSubmit }) {
+export default function VacationForm({ profile, onSubmit, onClose }) {
   const [form, setForm] = useState(EMPTY)
   const [loading, setLoading] = useState(false)
 
@@ -38,14 +38,29 @@ export default function VacationForm({ profile, onSubmit }) {
     if (form.end_date < form.start_date) return toast.error('End date must be after start date')
     if (!form.reason.trim()) return toast.error('Reason for leave is required')
     setLoading(true)
-    await onSubmit(form)
-    setForm(EMPTY)
+    const ok = await onSubmit(form)
     setLoading(false)
+    if (ok) {
+      setForm(EMPTY)
+      onClose?.()
+    }
   }
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-      <h2 className="text-base font-semibold text-gray-900">Team Holiday Request & Availability Form</h2>
+      <div className="flex items-start justify-between">
+        <h2 className="text-base font-semibold text-gray-900">Team Holiday Request &amp; Availability Form</h2>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="-mt-1 -mr-1 text-gray-400 hover:text-gray-700 text-xl leading-none px-2"
+          >
+            ×
+          </button>
+        )}
+      </div>
       <p className="text-sm text-gray-500 mt-0.5 mb-5">Fields marked with * are required.</p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -167,12 +182,22 @@ export default function VacationForm({ profile, onSubmit }) {
           />
         </div>
 
-        <button
-          type="submit" disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg py-2.5 text-sm transition-colors"
-        >
-          {loading ? 'Submitting…' : 'Submit Request'}
-        </button>
+        <div className="flex gap-2 pt-1">
+          <button
+            type="submit" disabled={loading}
+            className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 text-white font-medium rounded-lg py-2.5 text-sm transition-all active:scale-[0.99]"
+          >
+            {loading ? 'Submitting…' : 'Submit Request'}
+          </button>
+          {onClose && (
+            <button
+              type="button" onClick={onClose}
+              className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
     </div>
   )
