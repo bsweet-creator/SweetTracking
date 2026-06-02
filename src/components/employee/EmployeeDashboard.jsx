@@ -148,15 +148,6 @@ export default function EmployeeDashboard({ profile }) {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 pb-12 pt-2 space-y-6">
-        {/* Clock widget always visible */}
-        <ClockWidget
-          name={profile.full_name}
-          activePunch={activePunch}
-          punches={punches}
-          onClockIn={handleClockIn}
-          onClockOut={handleClockOut}
-        />
-
         {/* Tabs */}
         <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
           {['time', 'vacation'].map(t => (
@@ -190,6 +181,15 @@ export default function EmployeeDashboard({ profile }) {
             <VacationHistory vacations={vacations} />
           </div>
         )}
+
+        {/* Clock widget */}
+        <ClockWidget
+          name={profile.full_name}
+          activePunch={activePunch}
+          punches={punches}
+          onClockIn={handleClockIn}
+          onClockOut={handleClockOut}
+        />
       </main>
 
       {editor && (
