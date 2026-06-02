@@ -21,7 +21,11 @@ export default function PunchHistory({ punches, onAdd, onEdit, onDelete }) {
       </div>
 
       {!punches.length ? (
-        <p className="px-6 py-8 text-center text-sm text-gray-400">No time entries yet.</p>
+        <div className="px-6 py-10 text-center">
+          <div className="text-3xl mb-2">⏱️</div>
+          <p className="text-sm text-gray-500">No time entries yet.</p>
+          <p className="text-xs text-gray-400 mt-1">Clock in above to start tracking your day.</p>
+        </div>
       ) : (
         <div className="divide-y divide-gray-100">
           {punches.map(punch => {

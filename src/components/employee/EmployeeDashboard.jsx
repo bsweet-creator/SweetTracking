@@ -131,12 +131,12 @@ export default function EmployeeDashboard({ profile }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-gray-900">TimeTracker</h1>
-          <p className="text-sm text-gray-500">{profile.full_name || profile.email}</p>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      {/* Slim brand bar */}
+      <header className="px-4 sm:px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-fuchsia-600 text-white text-sm font-bold">T</span>
+          <span className="font-semibold text-gray-800">TimeTracker</span>
         </div>
         <button
           onClick={handleSignOut}
@@ -146,10 +146,12 @@ export default function EmployeeDashboard({ profile }) {
         </button>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+      <main className="max-w-2xl mx-auto px-4 pb-12 pt-2 space-y-6">
         {/* Clock widget always visible */}
         <ClockWidget
+          name={profile.full_name}
           activePunch={activePunch}
+          punches={punches}
           onClockIn={handleClockIn}
           onClockOut={handleClockOut}
         />
