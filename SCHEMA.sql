@@ -52,15 +52,25 @@ create table public.time_punches (
 -- VACATION_REQUESTS table
 -- ============================================================
 create table public.vacation_requests (
-  id           uuid primary key default uuid_generate_v4(),
-  user_id      uuid not null references public.profiles(id) on delete cascade,
-  start_date   date not null,
-  end_date     date not null,
-  reason       text,
-  status       text not null default 'pending' check (status in ('pending', 'approved', 'denied')),
-  reviewed_by  uuid references public.profiles(id),
-  reviewed_at  timestamptz,
-  created_at   timestamptz not null default now()
+  id                 uuid primary key default uuid_generate_v4(),
+  user_id            uuid not null references public.profiles(id) on delete cascade,
+  leave_type         text not null default 'Annual Leave',
+  start_date         date not null,
+  end_date           date not null,
+  reason             text,
+  availability       text,
+  available_window   text,
+  contact_method     text,
+  emergency_contact  text,
+  coverage_tasks     text,
+  backup_person      text,
+  informed_backup    boolean not null default false,
+  critical_deadlines text,
+  status             text not null default 'pending' check (status in ('pending', 'approved', 'denied')),
+  manager_comments   text,
+  reviewed_by        uuid references public.profiles(id),
+  reviewed_at        timestamptz,
+  created_at         timestamptz not null default now()
 );
 
 -- ============================================================

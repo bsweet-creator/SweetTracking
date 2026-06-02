@@ -35,16 +35,21 @@ export default function AdminDashboard({ profile }) {
     setLoading(false)
   }
 
-  async function reviewVacation(id, status) {
+  async function reviewVacation(id, status, managerComments) {
     const { data, error } = await supabase
       .from('vacation_requests')
-      .update({ status, reviewed_by: profile.id, reviewed_at: new Date().toISOString() })
+      .update({
+        status,
+        manager_comments: managerComments ?? null,
+        reviewed_by: profile.id,
+        reviewed_at: new Date().toISOString(),
+      })
       .eq('id', id)
       .select('*, profiles(full_name, email)')
       .single()
     if (error) return toast.error(error.message)
     setVacations(prev => prev.map(v => (v.id === id ? data : v)))
-    toast.success(`Request ${status}`)
+    toast.success(status === 'approved' ? 'Request approved' : status === 'denied' ? 'Request rejected' : 'Comment saved')
   }
 
   async function handleSignOut() {

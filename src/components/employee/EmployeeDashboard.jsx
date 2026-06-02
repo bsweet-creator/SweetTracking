@@ -124,7 +124,7 @@ export default function EmployeeDashboard({ profile }) {
 
         {tab === 'vacation' && (
           <div className="space-y-6">
-            <VacationForm onSubmit={submitVacation} />
+            <VacationForm profile={profile} onSubmit={submitVacation} />
             <VacationHistory vacations={vacations} />
           </div>
         )}
