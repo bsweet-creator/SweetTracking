@@ -26,7 +26,7 @@ export default function AdminDashboard({ profile }) {
         .limit(200),
       supabase
         .from('vacation_requests')
-        .select('*, profiles(full_name, email)')
+        .select('*, profiles!vacation_requests_user_id_fkey(full_name, email)')
         .order('created_at', { ascending: false }),
     ])
     if (empData) setEmployees(empData)
@@ -45,7 +45,7 @@ export default function AdminDashboard({ profile }) {
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select('*, profiles(full_name, email)')
+      .select('*, profiles!vacation_requests_user_id_fkey(full_name, email)')
       .single()
     if (error) return toast.error(error.message)
     setVacations(prev => prev.map(v => (v.id === id ? data : v)))
