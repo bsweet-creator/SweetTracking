@@ -59,19 +59,15 @@ export default function AdminDashboard({ profile }) {
   }
 
   async function reviewVacation(id, status, managerComments) {
-    const { data, error } = await supabase
-      .from('vacation_requests')
-      .update({
-        status,
-        manager_comments: managerComments ?? null,
-        reviewed_by: profile.id,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select('*, profiles!vacation_requests_user_id_fkey(full_name, email)')
-      .single()
+    const { data, error } = await supabase.rpc('review_vacation', {
+      p_id: id,
+      p_status: status,
+      p_comments: managerComments ?? null,
+    })
     if (error) return toast.error(error.message)
-    setVacations(prev => prev.map(v => (v.id === id ? data : v)))
+    const updated = Array.isArray(data) ? data[0] : data
+    // Preserve the joined profile info already in local state
+    setVacations(prev => prev.map(v => (v.id === id ? { ...v, ...updated } : v)))
     toast.success(status === 'approved' ? 'Request approved' : status === 'denied' ? 'Request rejected' : 'Comment saved')
   }
 

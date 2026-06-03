@@ -149,9 +149,29 @@ begin
 end;
 $$;
 
+-- Admin-only vacation review (employees must not change their own status)
+create or replace function public.review_vacation(p_id uuid, p_status text, p_comments text)
+returns public.vacation_requests
+language plpgsql security definer set search_path = public as $$
+declare v_req public.vacation_requests;
+begin
+  if not public.is_admin() then raise exception 'Only admins can review requests'; end if;
+  if p_status not in ('approved', 'denied', 'pending') then raise exception 'Invalid status'; end if;
+  update public.vacation_requests vr
+     set status = p_status, manager_comments = p_comments,
+         reviewed_by = auth.uid(), reviewed_at = now()
+   where vr.id = p_id
+     and exists (select 1 from public.profiles p where p.id = vr.user_id and p.org_id = public.current_org())
+  returning * into v_req;
+  if v_req.id is null then raise exception 'Request not found in your organization'; end if;
+  return v_req;
+end;
+$$;
+
 grant execute on function
   public.current_org(), public.create_organization(text),
-  public.get_invitation(text), public.accept_invitation(text)
+  public.get_invitation(text), public.accept_invitation(text),
+  public.review_vacation(uuid, text, text)
 to authenticated;
 
 -- ============================================================
@@ -207,8 +227,15 @@ create policy "vacation_update_admin" on public.vacation_requests for update usi
 
 grant select, insert, update, delete on public.organizations, public.invitations to authenticated;
 
--- Restrict profile UPDATEs to full_name only. role/org_id can change
--- exclusively through the SECURITY DEFINER functions above, preventing
--- a user from making themselves an admin.
+-- Restrict profile UPDATEs to full_name only, and INSERTs to id/email/
+-- full_name. role/org_id can change exclusively through the SECURITY
+-- DEFINER functions above — a user cannot make themselves an admin or
+-- jump into another org.
 revoke update on public.profiles from authenticated;
 grant  update (full_name) on public.profiles to authenticated;
+revoke insert on public.profiles from authenticated;
+grant  insert (id, email, full_name) on public.profiles to authenticated;
+
+-- Vacation status changes only via review_vacation() (admin-only RPC).
+-- Employees can create requests but cannot approve their own.
+revoke update on public.vacation_requests from authenticated;

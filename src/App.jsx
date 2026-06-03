@@ -73,7 +73,7 @@ export default function App() {
           id: userId,
           email: user.email,
           full_name: user.user_metadata?.full_name || '',
-          role: 'employee',
+          // role defaults to 'employee', org_id to NULL (locked by column grant)
         })
         .select()
         .single()
