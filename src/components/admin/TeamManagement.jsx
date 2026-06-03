@@ -6,12 +6,13 @@ function inviteUrl(token) {
   return `${window.location.origin}/?invite=${token}`
 }
 
-export default function TeamManagement({ profile, members, invitations, onChange }) {
+export default function TeamManagement({ profile, org, members, invitations, onChange, onSetNotify }) {
   const [role, setRole] = useState('employee')
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
 
   const pending = invitations.filter(i => i.status === 'pending')
+  const notifyOn = org?.notify_vacation ?? true
 
   async function createInvite(e) {
     e.preventDefault()
@@ -46,6 +47,33 @@ export default function TeamManagement({ profile, members, invitations, onChange
 
   return (
     <div className="space-y-6">
+      {/* Notification setting */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Email notifications</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Email all admins when an employee submits a time-off request.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={notifyOn}
+            onClick={() => onSetNotify(!notifyOn)}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+              notifyOn ? 'bg-indigo-600' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                notifyOn ? 'translate-x-5' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
       {/* Invite form */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
         <h2 className="text-base font-semibold text-gray-900 mb-4">Invite a team member</h2>

@@ -85,6 +85,23 @@ incremental changes in `MIGRATION_*.sql` (apply in order to an existing project)
 - **Known hardening TODO before selling externally:** email verification, stronger password
   policy / MFA, invite-link expiry, audit trail on punch edits.
 
+## Vacation-request email notifications
+
+Org-wide toggle (Team tab) → emails all admins when an employee submits a request.
+Pieces: `organizations.notify_vacation` column, the `notify-vacation-request` Edge
+Function (`supabase/functions/`), and a Database Webhook on `vacation_requests` INSERT.
+
+One-time setup in Supabase:
+1. **Edge Functions → Deploy** the `notify-vacation-request` function (paste `index.ts`).
+2. **Edge Functions → Secrets:** add `RESEND_API_KEY` (`SUPABASE_URL` and
+   `SUPABASE_SERVICE_ROLE_KEY` are injected automatically).
+3. **Database → Webhooks → Create:** table `vacation_requests`, event `INSERT`,
+   type "Supabase Edge Function" → `notify-vacation-request`. Add HTTP header
+   `Authorization: Bearer <service_role_key>` so it passes JWT verification.
+
+Sends from `noreply@sweetbuilds.com` via Resend. Skips sending when the org's
+`notify_vacation` is false.
+
 ## Known notes
 - **Free Supabase projects auto-pause after ~7 days of zero activity.** Daily team
   use keeps it awake; if it pauses, un-pause from the Supabase dashboard (~1 min, no data loss).

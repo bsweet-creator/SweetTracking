@@ -22,10 +22,11 @@ create table public.profiles (
 -- ORGANIZATIONS
 -- ============================================================
 create table public.organizations (
-  id         uuid primary key default uuid_generate_v4(),
-  name       text not null,
-  created_by uuid references public.profiles(id),
-  created_at timestamptz not null default now()
+  id              uuid primary key default uuid_generate_v4(),
+  name            text not null,
+  notify_vacation boolean not null default true,  -- email admins on new requests
+  created_by      uuid references public.profiles(id),
+  created_at      timestamptz not null default now()
 );
 
 alter table public.profiles

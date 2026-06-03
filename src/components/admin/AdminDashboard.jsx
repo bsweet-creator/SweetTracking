@@ -71,6 +71,18 @@ export default function AdminDashboard({ profile }) {
     toast.success(status === 'approved' ? 'Request approved' : status === 'denied' ? 'Request rejected' : 'Comment saved')
   }
 
+  async function setNotifyVacation(value) {
+    const { data, error } = await supabase
+      .from('organizations')
+      .update({ notify_vacation: value })
+      .eq('id', profile.org_id)
+      .select()
+      .single()
+    if (error) return toast.error(error.message)
+    setOrg(data)
+    toast.success(value ? 'Email notifications turned on' : 'Email notifications turned off')
+  }
+
   async function handleSignOut() {
     await supabase.auth.signOut()
   }
@@ -139,9 +151,11 @@ export default function AdminDashboard({ profile }) {
         ) : (
           <TeamManagement
             profile={profile}
+            org={org}
             members={members}
             invitations={invitations}
             onChange={reloadTeam}
+            onSetNotify={setNotifyVacation}
           />
         )}
       </main>
