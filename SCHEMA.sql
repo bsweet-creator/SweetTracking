@@ -175,6 +175,20 @@ grant execute on function
   public.review_vacation(uuid, text, text)
 to authenticated;
 
+-- Lookup used by the vacation-notification Edge Function (runs as owner)
+create or replace function public.vacation_notify_targets(p_user_id uuid)
+returns table (org_name text, notify boolean, requester_name text, admin_emails text[])
+language sql security definer set search_path = public stable as $$
+  select o.name, o.notify_vacation,
+         coalesce(nullif(rp.full_name, ''), rp.email),
+         (select array_agg(a.email) from public.profiles a
+           where a.org_id = rp.org_id and a.role = 'admin' and a.email is not null)
+  from public.profiles rp
+  join public.organizations o on o.id = rp.org_id
+  where rp.id = p_user_id;
+$$;
+grant execute on function public.vacation_notify_targets(uuid) to anon, authenticated, service_role;
+
 -- ============================================================
 -- ROW LEVEL SECURITY (org-scoped)
 -- ============================================================

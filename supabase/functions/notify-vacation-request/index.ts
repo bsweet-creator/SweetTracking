@@ -29,35 +29,18 @@ Deno.serve(async (req) => {
       },
     )
 
-    // Who submitted it + which org
-    const { data: requester, error: reqErr } = await supabase
-      .from('profiles')
-      .select('full_name, email, org_id')
-      .eq('id', record.user_id)
-      .single()
-    console.log('requester:', JSON.stringify(requester), 'err:', reqErr?.message)
-    if (!requester?.org_id) return new Response('no org', { status: 200 })
+    // One SECURITY DEFINER call: org name, toggle, requester name, admin emails
+    const { data: targets, error: tErr } = await supabase
+      .rpc('vacation_notify_targets', { p_user_id: record.user_id })
+    const t = Array.isArray(targets) ? targets[0] : targets
+    console.log('targets:', JSON.stringify(t), 'err:', tErr?.message)
+    if (!t) return new Response('no targets', { status: 200 })
+    if (!t.notify) return new Response('notifications disabled', { status: 200 })
 
-    // Org-wide toggle
-    const { data: org, error: orgErr } = await supabase
-      .from('organizations')
-      .select('name, notify_vacation')
-      .eq('id', requester.org_id)
-      .single()
-    console.log('org:', JSON.stringify(org), 'err:', orgErr?.message)
-    if (!org?.notify_vacation) return new Response('notifications disabled', { status: 200 })
-
-    // Recipients = all admins in the org
-    const { data: admins, error: adminErr } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('org_id', requester.org_id)
-      .eq('role', 'admin')
-    const to = (admins ?? []).map((a) => a.email).filter(Boolean)
-    console.log('admin recipients:', JSON.stringify(to), 'err:', adminErr?.message)
+    const to = (t.admin_emails ?? []).filter(Boolean)
     if (to.length === 0) return new Response('no admins', { status: 200 })
 
-    const name = requester.full_name || requester.email
+    const name = t.requester_name
     const subject = `New time-off request from ${name}`
     const html = `
       <div style="font-family:system-ui,Arial,sans-serif;font-size:14px;color:#1f2937">
