@@ -8,6 +8,7 @@ export default function AuthPage({ inviteToken }) {
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ email: '', password: '', full_name: '' })
   const [inviteOrg, setInviteOrg] = useState(null)
+  const [confirmEmail, setConfirmEmail] = useState(null) // email awaiting confirmation
 
   // If arriving via an invite link, show which org they're joining
   useEffect(() => {
@@ -37,14 +38,25 @@ export default function AuthPage({ inviteToken }) {
     e.preventDefault()
     if (!form.full_name.trim()) return toast.error('Full name is required')
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
+    // Send the confirmation link back to the invite URL (if any) so the
+    // invitation survives the email round-trip.
+    const redirectTo = inviteToken
+      ? `${window.location.origin}/?invite=${inviteToken}`
+      : window.location.origin
+    const { data, error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
-      options: { data: { full_name: form.full_name } },
+      options: { data: { full_name: form.full_name }, emailRedirectTo: redirectTo },
     })
     setLoading(false)
     if (error) return toast.error(error.message)
-    toast.success('Account created!')
+
+    // No session returned → email confirmation is required before sign-in.
+    if (!data.session) {
+      setConfirmEmail(form.email)
+    } else {
+      toast.success('Account created!')
+    }
   }
 
   async function handleForgot(e) {
@@ -62,6 +74,30 @@ export default function AuthPage({ inviteToken }) {
 
   const submitHandler =
     mode === 'login' ? handleLogin : mode === 'signup' ? handleSignup : handleForgot
+
+  // "Check your email" screen shown after a signup that needs confirmation
+  if (confirmEmail) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+          <h1 className="text-xl font-bold text-gray-900 mb-2">Check your email</h1>
+          <p className="text-sm text-gray-600">
+            We sent a confirmation link to <span className="font-medium text-gray-900">{confirmEmail}</span>.
+            Click it to activate your account, then sign in.
+          </p>
+          <p className="text-xs text-gray-400 mt-3">
+            Don't see it? Check your spam folder — it can take a minute to arrive.
+          </p>
+          <button
+            onClick={() => { setConfirmEmail(null); setMode('login') }}
+            className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg py-2 text-sm transition-colors"
+          >
+            Back to sign in
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
