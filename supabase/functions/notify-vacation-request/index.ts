@@ -15,11 +15,9 @@ Deno.serve(async (req) => {
   try {
     const payload = await req.json()
     const record = payload.record
-    console.log('webhook payload type:', payload.type, 'record id:', record?.id, 'user:', record?.user_id)
     if (!record?.user_id) return new Response('no record', { status: 200 })
 
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    console.log('service key present:', serviceKey.length > 0, 'len:', serviceKey.length)
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       serviceKey,
@@ -30,10 +28,9 @@ Deno.serve(async (req) => {
     )
 
     // One SECURITY DEFINER call: org name, toggle, requester name, admin emails
-    const { data: targets, error: tErr } = await supabase
+    const { data: targets } = await supabase
       .rpc('vacation_notify_targets', { p_user_id: record.user_id })
     const t = Array.isArray(targets) ? targets[0] : targets
-    console.log('targets:', JSON.stringify(t), 'err:', tErr?.message)
     if (!t) return new Response('no targets', { status: 200 })
     if (!t.notify) return new Response('notifications disabled', { status: 200 })
 
@@ -66,9 +63,9 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ from: FROM, to, subject, html }),
     })
 
-    const body = await res.text()
-    console.log('resend status:', res.status, 'body:', body)
     if (!res.ok) {
+      const body = await res.text()
+      console.error('resend error:', res.status, body)
       return new Response(`resend error: ${body}`, { status: 500 })
     }
     return new Response('sent', { status: 200 })
