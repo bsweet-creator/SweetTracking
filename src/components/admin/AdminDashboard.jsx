@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import EmployeeTimeView from './EmployeeTimeView'
 import Reports from './Reports'
+import Calendar from './Calendar'
 import VacationReview from './VacationReview'
 import TeamManagement from './TeamManagement'
 
@@ -123,6 +124,7 @@ export default function AdminDashboard({ profile }) {
           {[
             { key: 'time', label: 'Time Logs' },
             { key: 'reports', label: 'Reports' },
+            { key: 'calendar', label: 'Calendar' },
             { key: 'vacation', label: `Vacation${pendingCount ? ` (${pendingCount})` : ''}` },
             { key: 'team', label: `Team${pendingInvites ? ` (${pendingInvites})` : ''}` },
           ].map(t => (
@@ -146,6 +148,8 @@ export default function AdminDashboard({ profile }) {
           <EmployeeTimeView employees={employees} punches={punches} />
         ) : tab === 'reports' ? (
           <Reports punches={punches} />
+        ) : tab === 'calendar' ? (
+          <Calendar vacations={vacations} />
         ) : tab === 'vacation' ? (
           <VacationReview vacations={vacations} onReview={reviewVacation} />
         ) : (
