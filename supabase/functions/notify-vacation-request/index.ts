@@ -15,6 +15,7 @@ Deno.serve(async (req) => {
   try {
     const payload = await req.json()
     const record = payload.record
+    console.log('webhook payload type:', payload.type, 'record id:', record?.id, 'user:', record?.user_id)
     if (!record?.user_id) return new Response('no record', { status: 200 })
 
     const supabase = createClient(
@@ -23,28 +24,31 @@ Deno.serve(async (req) => {
     )
 
     // Who submitted it + which org
-    const { data: requester } = await supabase
+    const { data: requester, error: reqErr } = await supabase
       .from('profiles')
       .select('full_name, email, org_id')
       .eq('id', record.user_id)
       .single()
+    console.log('requester:', JSON.stringify(requester), 'err:', reqErr?.message)
     if (!requester?.org_id) return new Response('no org', { status: 200 })
 
     // Org-wide toggle
-    const { data: org } = await supabase
+    const { data: org, error: orgErr } = await supabase
       .from('organizations')
       .select('name, notify_vacation')
       .eq('id', requester.org_id)
       .single()
+    console.log('org:', JSON.stringify(org), 'err:', orgErr?.message)
     if (!org?.notify_vacation) return new Response('notifications disabled', { status: 200 })
 
     // Recipients = all admins in the org
-    const { data: admins } = await supabase
+    const { data: admins, error: adminErr } = await supabase
       .from('profiles')
       .select('email')
       .eq('org_id', requester.org_id)
       .eq('role', 'admin')
     const to = (admins ?? []).map((a) => a.email).filter(Boolean)
+    console.log('admin recipients:', JSON.stringify(to), 'err:', adminErr?.message)
     if (to.length === 0) return new Response('no admins', { status: 200 })
 
     const name = requester.full_name || requester.email
@@ -73,9 +77,10 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ from: FROM, to, subject, html }),
     })
 
+    const body = await res.text()
+    console.log('resend status:', res.status, 'body:', body)
     if (!res.ok) {
-      const text = await res.text()
-      return new Response(`resend error: ${text}`, { status: 500 })
+      return new Response(`resend error: ${body}`, { status: 500 })
     }
     return new Response('sent', { status: 200 })
   } catch (e) {
