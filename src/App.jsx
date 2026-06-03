@@ -115,7 +115,7 @@ export default function App() {
     return <Onboarding profile={profile} inviteToken={inviteToken} onComplete={reloadProfile} />
   }
 
-  if (profile.role === 'admin') return <AdminDashboard profile={profile} />
+  if (profile.role === 'admin') return <AdminDashboard profile={profile} onReload={reloadProfile} />
 
-  return <EmployeeDashboard profile={profile} />
+  return <EmployeeDashboard profile={profile} onReload={reloadProfile} />
 }

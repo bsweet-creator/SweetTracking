@@ -8,13 +8,15 @@ import VacationForm from './VacationForm'
 import PunchHistory from './PunchHistory'
 import PunchEditor from './PunchEditor'
 import VacationHistory from './VacationHistory'
+import AccountSettings from '../settings/AccountSettings'
 
-export default function EmployeeDashboard({ profile }) {
+export default function EmployeeDashboard({ profile, onReload }) {
   const [activePunch, setActivePunch] = useState(null)
   const [punches, setPunches] = useState([])
   const [vacations, setVacations] = useState([])
   const [tab, setTab] = useState('time') // 'time' | 'vacation'
   const [editor, setEditor] = useState(null) // null = closed, { punch } = open
+  const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -139,12 +141,20 @@ export default function EmployeeDashboard({ profile }) {
           <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-fuchsia-600 text-white text-sm font-bold">T</span>
           <span className="font-semibold text-gray-800">TimeTracker</span>
         </div>
-        <button
-          onClick={handleSignOut}
-          className="text-sm text-gray-500 hover:text-gray-800 transition-colors"
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowSettings(true)}
+            className="text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            Settings
+          </button>
+          <button
+            onClick={handleSignOut}
+            className="text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 pb-12 pt-2 space-y-6">
@@ -196,6 +206,10 @@ export default function EmployeeDashboard({ profile }) {
           onClose={() => setEditor(null)}
           onSave={savePunch}
         />
+      )}
+
+      {showSettings && (
+        <AccountSettings profile={profile} onReload={onReload} onClose={() => setShowSettings(false)} />
       )}
     </div>
   )

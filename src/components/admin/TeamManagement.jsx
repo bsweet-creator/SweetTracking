@@ -6,13 +6,23 @@ function inviteUrl(token) {
   return `${window.location.origin}/?invite=${token}`
 }
 
-export default function TeamManagement({ profile, org, members, invitations, onChange, onSetNotify }) {
+export default function TeamManagement({ profile, org, members, invitations, onChange, onSetNotify, onRenameOrg }) {
   const [role, setRole] = useState('employee')
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
+  const [orgName, setOrgName] = useState(org?.name || '')
+  const [savingName, setSavingName] = useState(false)
 
   const pending = invitations.filter(i => i.status === 'pending')
   const notifyOn = org?.notify_vacation ?? true
+
+  async function saveOrgName(e) {
+    e.preventDefault()
+    if (!orgName.trim() || orgName.trim() === org?.name) return
+    setSavingName(true)
+    await onRenameOrg(orgName.trim())
+    setSavingName(false)
+  }
 
   async function createInvite(e) {
     e.preventDefault()
@@ -47,6 +57,29 @@ export default function TeamManagement({ profile, org, members, invitations, onC
 
   return (
     <div className="space-y-6">
+      {/* Organization name */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-1">Organization</h2>
+        <p className="text-sm text-gray-500 mb-4">The name shown across the app.</p>
+        <form onSubmit={saveOrgName} className="flex items-end gap-3">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <input
+              value={orgName}
+              onChange={e => setOrgName(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={savingName || !orgName.trim() || orgName.trim() === org?.name}
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            {savingName ? 'Saving…' : 'Save'}
+          </button>
+        </form>
+      </div>
+
       {/* Notification setting */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
         <div className="flex items-center justify-between gap-4">

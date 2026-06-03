@@ -6,8 +6,9 @@ import Reports from './Reports'
 import Calendar from './Calendar'
 import VacationReview from './VacationReview'
 import TeamManagement from './TeamManagement'
+import AccountSettings from '../settings/AccountSettings'
 
-export default function AdminDashboard({ profile }) {
+export default function AdminDashboard({ profile, onReload }) {
   const [tab, setTab] = useState('time') // 'time' | 'vacation' | 'team'
   const [org, setOrg] = useState(null)
   const [members, setMembers] = useState([])
@@ -15,6 +16,7 @@ export default function AdminDashboard({ profile }) {
   const [punches, setPunches] = useState([])
   const [vacations, setVacations] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
     loadAll()
@@ -84,6 +86,18 @@ export default function AdminDashboard({ profile }) {
     toast.success(value ? 'Email notifications turned on' : 'Email notifications turned off')
   }
 
+  async function renameOrg(name) {
+    const { data, error } = await supabase
+      .from('organizations')
+      .update({ name })
+      .eq('id', profile.org_id)
+      .select()
+      .single()
+    if (error) return toast.error(error.message)
+    setOrg(data)
+    toast.success('Organization renamed')
+  }
+
   async function handleSignOut() {
     await supabase.auth.signOut()
   }
@@ -111,9 +125,14 @@ export default function AdminDashboard({ profile }) {
               <p className="text-xs text-gray-500">{profile.full_name || profile.email} · Admin</p>
             </div>
           </div>
-          <button onClick={handleSignOut} className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
-            Sign out
-          </button>
+          <div className="flex items-center gap-4">
+            <button onClick={() => setShowSettings(true)} className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+              Settings
+            </button>
+            <button onClick={handleSignOut} className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
@@ -170,9 +189,14 @@ export default function AdminDashboard({ profile }) {
             invitations={invitations}
             onChange={reloadTeam}
             onSetNotify={setNotifyVacation}
+            onRenameOrg={renameOrg}
           />
         )}
       </main>
+
+      {showSettings && (
+        <AccountSettings profile={profile} onReload={onReload} onClose={() => setShowSettings(false)} />
+      )}
     </div>
   )
 }
