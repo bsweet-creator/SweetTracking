@@ -18,9 +18,15 @@ Deno.serve(async (req) => {
     console.log('webhook payload type:', payload.type, 'record id:', record?.id, 'user:', record?.user_id)
     if (!record?.user_id) return new Response('no record', { status: 200 })
 
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    console.log('service key present:', serviceKey.length > 0, 'len:', serviceKey.length)
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      serviceKey,
+      {
+        auth: { persistSession: false, autoRefreshToken: false },
+        global: { headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey } },
+      },
     )
 
     // Who submitted it + which org
