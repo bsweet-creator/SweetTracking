@@ -92,35 +92,45 @@ export default function AdminDashboard({ profile }) {
   const pendingCount = vacations.filter(v => v.status === 'pending').length
   const pendingInvites = invitations.filter(i => i.status === 'pending').length
 
+  const stats = [
+    { label: 'Members', value: members.length, accent: 'bg-indigo-500' },
+    { label: 'Clocked In Now', value: punches.filter(p => !p.punch_out).length, accent: 'bg-emerald-500' },
+    { label: 'Pending Requests', value: pendingCount, accent: 'bg-amber-500' },
+  ]
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-gray-900">{org?.name || 'Admin'}</h1>
-          <p className="text-sm text-gray-500">{profile.full_name || profile.email} · Admin</p>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      <header className="sticky top-0 z-10 bg-white/85 backdrop-blur border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-fuchsia-600 text-white font-bold">
+              {(org?.name || 'A').charAt(0).toUpperCase()}
+            </span>
+            <div className="leading-tight">
+              <h1 className="text-base font-semibold text-gray-900">{org?.name || 'Admin'}</h1>
+              <p className="text-xs text-gray-500">{profile.full_name || profile.email} · Admin</p>
+            </div>
+          </div>
+          <button onClick={handleSignOut} className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+            Sign out
+          </button>
         </div>
-        <button onClick={handleSignOut} className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
-          Sign out
-        </button>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         {/* Stats bar */}
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'Members', value: members.length },
-            { label: 'Clocked In Now', value: punches.filter(p => !p.punch_out).length },
-            { label: 'Pending Requests', value: pendingCount },
-          ].map(stat => (
-            <div key={stat.label} className="bg-white rounded-2xl border border-gray-200 shadow-sm px-5 py-4">
-              <p className="text-sm text-gray-500">{stat.label}</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {stats.map(stat => (
+            <div key={stat.label} className="relative bg-white rounded-2xl border border-gray-200 shadow-sm p-5 overflow-hidden">
+              <span className={`absolute left-0 top-0 h-full w-1.5 ${stat.accent}`} />
+              <p className="text-xs uppercase tracking-wide text-gray-400">{stat.label}</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1 tabular-nums">{stat.value}</p>
             </div>
           ))}
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-full sm:w-fit overflow-x-auto">
           {[
             { key: 'time', label: 'Time Logs' },
             { key: 'reports', label: 'Reports' },
@@ -131,8 +141,8 @@ export default function AdminDashboard({ profile }) {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                tab === t.key ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+              className={`whitespace-nowrap px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                tab === t.key ? 'bg-white shadow-sm text-indigo-700' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {t.label}
