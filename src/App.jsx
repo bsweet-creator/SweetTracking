@@ -7,11 +7,11 @@ import EmployeeDashboard from './components/employee/EmployeeDashboard'
 import AdminDashboard from './components/admin/AdminDashboard'
 
 // Invite token passed via URL: https://app/?invite=TOKEN
-// Persist it so it survives the email-confirmation round-trip (the
-// confirmation link returns to the bare Site URL without the param).
-const urlInvite = new URLSearchParams(window.location.search).get('invite')
-if (urlInvite) localStorage.setItem('pendingInvite', urlInvite)
-const inviteToken = urlInvite || localStorage.getItem('pendingInvite')
+// (The confirmation email redirect carries this param too, so we read
+// it only from the URL — persisting it would leak onto normal visits.)
+const inviteToken = new URLSearchParams(window.location.search).get('invite')
+// Clean up any token left in storage by older builds.
+localStorage.removeItem('pendingInvite')
 
 export default function App() {
   const [session, setSession] = useState(null)
