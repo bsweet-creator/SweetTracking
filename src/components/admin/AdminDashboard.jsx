@@ -125,6 +125,28 @@ export default function AdminDashboard({ profile, onReload }) {
     toast.success('Organization renamed')
   }
 
+  async function removeMember(id) {
+    const { error } = await supabase.rpc('remove_member', { p_user_id: id })
+    if (error) return toast.error(error.message)
+    toast.success('Member removed')
+    reloadTeam()
+  }
+
+  async function setMemberRole(id, role) {
+    const { error } = await supabase.rpc('set_member_role', { p_user_id: id, p_role: role })
+    if (error) return toast.error(error.message)
+    toast.success('Role updated')
+    reloadTeam()
+  }
+
+  async function transferOwnership(id) {
+    const { error } = await supabase.rpc('transfer_ownership', { p_user_id: id })
+    if (error) return toast.error(error.message)
+    toast.success('Ownership transferred')
+    await reloadTeam()
+    await onReload?.() // current user is now an admin — refresh own profile
+  }
+
   async function handleSignOut() {
     await supabase.auth.signOut()
   }
@@ -149,7 +171,9 @@ export default function AdminDashboard({ profile, onReload }) {
             </span>
             <div className="leading-tight">
               <h1 className="text-base font-semibold text-gray-900">{org?.name || 'Admin'}</h1>
-              <p className="text-xs text-gray-500">{profile.full_name || profile.email} · Admin</p>
+              <p className="text-xs text-gray-500">
+                {profile.full_name || profile.email} · {profile.role === 'owner' ? 'Owner' : 'Admin'}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -219,6 +243,9 @@ export default function AdminDashboard({ profile, onReload }) {
             onCategoriesChange={reloadCategories}
             onSetNotify={setNotifyVacation}
             onRenameOrg={renameOrg}
+            onRemoveMember={removeMember}
+            onSetMemberRole={setMemberRole}
+            onTransferOwnership={transferOwnership}
           />
         )}
       </main>

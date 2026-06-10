@@ -14,7 +14,7 @@ create table public.profiles (
   id         uuid primary key references auth.users(id) on delete cascade,
   email      text not null,
   full_name  text not null default '',
-  role       text not null default 'employee' check (role in ('employee', 'admin')),
+  role       text not null default 'employee' check (role in ('employee', 'admin', 'owner')),
   created_at timestamptz not null default now()
 );
 
@@ -125,11 +125,60 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- Is the caller an admin?
+-- Is the caller an admin? (owners count as admins everywhere)
 create or replace function public.is_admin()
 returns boolean language sql security definer set search_path = public stable as $$
-  select exists (select 1 from public.profiles where id = auth.uid() and role = 'admin');
+  select exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'owner'));
 $$;
+
+create or replace function public.is_owner()
+returns boolean language sql security definer set search_path = public stable as $$
+  select exists (select 1 from public.profiles where id = auth.uid() and role = 'owner');
+$$;
+
+-- Owner-only member management (SECURITY DEFINER bypasses column grants)
+create or replace function public.remove_member(p_user_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_owner() then raise exception 'Only the owner can remove members'; end if;
+  if p_user_id = auth.uid() then raise exception 'You cannot remove yourself'; end if;
+  update public.profiles set org_id = null, role = 'employee'
+   where id = p_user_id and org_id = public.current_org() and role <> 'owner';
+  if not found then raise exception 'Member not found in your organization'; end if;
+end;
+$$;
+
+create or replace function public.set_member_role(p_user_id uuid, p_role text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_owner() then raise exception 'Only the owner can change roles'; end if;
+  if p_role not in ('employee', 'admin') then raise exception 'Invalid role'; end if;
+  if p_user_id = auth.uid() then raise exception 'You cannot change your own role'; end if;
+  update public.profiles set role = p_role
+   where id = p_user_id and org_id = public.current_org() and role <> 'owner';
+  if not found then raise exception 'Member not found in your organization'; end if;
+end;
+$$;
+
+create or replace function public.transfer_ownership(p_user_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare v_org uuid;
+begin
+  if not public.is_owner() then raise exception 'Only the owner can transfer ownership'; end if;
+  if p_user_id = auth.uid() then raise exception 'You are already the owner'; end if;
+  v_org := public.current_org();
+  if not exists (select 1 from public.profiles where id = p_user_id and org_id = v_org) then
+    raise exception 'Member not found in your organization';
+  end if;
+  update public.profiles set role = 'owner' where id = p_user_id;
+  update public.profiles set role = 'admin' where id = auth.uid();
+end;
+$$;
+
+grant execute on function
+  public.is_owner(), public.remove_member(uuid),
+  public.set_member_role(uuid, text), public.transfer_ownership(uuid)
+to authenticated;
 
 -- The caller's organization id
 create or replace function public.current_org()
@@ -145,7 +194,7 @@ begin
   if auth.uid() is null then raise exception 'Not authenticated'; end if;
   if coalesce(trim(p_name), '') = '' then raise exception 'Organization name is required'; end if;
   insert into public.organizations (name, created_by) values (trim(p_name), auth.uid()) returning * into v_org;
-  update public.profiles set org_id = v_org.id, role = 'admin' where id = auth.uid();
+  update public.profiles set org_id = v_org.id, role = 'owner' where id = auth.uid();
   return v_org;
 end;
 $$;

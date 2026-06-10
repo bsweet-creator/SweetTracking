@@ -7,7 +7,11 @@ function inviteUrl(token) {
   return `${window.location.origin}/?invite=${token}`
 }
 
-export default function TeamManagement({ profile, org, members, invitations, categories, onChange, onCategoriesChange, onSetNotify, onRenameOrg }) {
+export default function TeamManagement({
+  profile, org, members, invitations, categories,
+  onChange, onCategoriesChange, onSetNotify, onRenameOrg,
+  onRemoveMember, onSetMemberRole, onTransferOwnership,
+}) {
   const [role, setRole] = useState('employee')
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
@@ -16,6 +20,7 @@ export default function TeamManagement({ profile, org, members, invitations, cat
 
   const pending = invitations.filter(i => i.status === 'pending')
   const notifyOn = org?.notify_vacation ?? true
+  const iAmOwner = profile.role === 'owner'
 
   async function saveOrgName(e) {
     e.preventDefault()
@@ -182,24 +187,67 @@ export default function TeamManagement({ profile, org, members, invitations, cat
           <h2 className="text-base font-semibold text-gray-900">Members ({members.length})</h2>
         </div>
         <div className="divide-y divide-gray-100">
-          {members.map(m => (
-            <div key={m.id} className="px-6 py-3 flex items-center justify-between text-sm">
-              <div>
-                <p className="font-medium text-gray-800">
-                  {m.full_name || m.email}
-                  {m.id === profile.id && <span className="text-gray-400 font-normal"> (you)</span>}
-                </p>
-                <p className="text-xs text-gray-500">{m.email}</p>
+          {members.map(m => {
+            const isSelf = m.id === profile.id
+            const isMemberOwner = m.role === 'owner'
+            const canManage = iAmOwner && !isSelf && !isMemberOwner
+            return (
+              <div key={m.id} className="px-6 py-3 flex items-center justify-between gap-3 text-sm">
+                <div className="min-w-0">
+                  <p className="font-medium text-gray-800">
+                    {m.full_name || m.email}
+                    {isSelf && <span className="text-gray-400 font-normal"> (you)</span>}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">{m.email}</p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {canManage ? (
+                    <>
+                      <select
+                        value={m.role}
+                        onChange={e => onSetMemberRole(m.id, e.target.value)}
+                        className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="employee">Employee</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Make ${m.full_name || m.email} the owner? You will become an admin.`)) {
+                            onTransferOwnership(m.id)
+                          }
+                        }}
+                        className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                      >
+                        Make owner
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Remove ${m.full_name || m.email} from the organization?`)) {
+                            onRemoveMember(m.id)
+                          }
+                        }}
+                        className="text-xs text-gray-400 hover:text-red-600"
+                      >
+                        Remove
+                      </button>
+                    </>
+                  ) : (
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full border capitalize ${
+                      m.role === 'owner'
+                        ? 'bg-violet-50 text-violet-700 border-violet-200'
+                        : m.role === 'admin'
+                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                        : 'bg-gray-50 text-gray-600 border-gray-200'
+                    }`}>
+                      {m.role}
+                    </span>
+                  )}
+                </div>
               </div>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full border capitalize ${
-                m.role === 'admin'
-                  ? 'bg-blue-50 text-blue-700 border-blue-200'
-                  : 'bg-gray-50 text-gray-600 border-gray-200'
-              }`}>
-                {m.role}
-              </span>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>
