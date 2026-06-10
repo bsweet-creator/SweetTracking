@@ -211,16 +211,18 @@ export default function TeamManagement({
                       }`}>
                         {m.role}
                       </span>
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`Make ${m.full_name || m.email} the owner? You will become an admin.`)) {
-                            onTransferOwnership(m.id)
-                          }
-                        }}
-                        className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-                      >
-                        Make owner
-                      </button>
+                      {m.role === 'admin' && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Make ${m.full_name || m.email} the owner? You will become an admin.`)) {
+                              onTransferOwnership(m.id)
+                            }
+                          }}
+                          className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                        >
+                          Make owner
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           if (window.confirm(`Remove ${m.full_name || m.email} from the organization?`)) {

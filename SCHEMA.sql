@@ -167,8 +167,8 @@ begin
   if not public.is_owner() then raise exception 'Only the owner can transfer ownership'; end if;
   if p_user_id = auth.uid() then raise exception 'You are already the owner'; end if;
   v_org := public.current_org();
-  if not exists (select 1 from public.profiles where id = p_user_id and org_id = v_org) then
-    raise exception 'Member not found in your organization';
+  if not exists (select 1 from public.profiles where id = p_user_id and org_id = v_org and role = 'admin') then
+    raise exception 'Ownership can only be transferred to an admin';
   end if;
   update public.profiles set role = 'owner' where id = p_user_id;
   update public.profiles set role = 'admin' where id = auth.uid();
