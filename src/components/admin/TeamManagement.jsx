@@ -204,14 +204,13 @@ export default function TeamManagement({
                 <div className="flex items-center gap-2 shrink-0">
                   {canManage ? (
                     <>
-                      <select
-                        value={m.role}
-                        onChange={e => onSetMemberRole(m.id, e.target.value)}
-                        className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="employee">Employee</option>
-                        <option value="admin">Admin</option>
-                      </select>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full border capitalize ${
+                        m.role === 'admin'
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-gray-50 text-gray-600 border-gray-200'
+                      }`}>
+                        {m.role}
+                      </span>
                       <button
                         onClick={() => {
                           if (window.confirm(`Make ${m.full_name || m.email} the owner? You will become an admin.`)) {
