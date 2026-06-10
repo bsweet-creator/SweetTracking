@@ -148,18 +148,6 @@ begin
 end;
 $$;
 
-create or replace function public.set_member_role(p_user_id uuid, p_role text)
-returns void language plpgsql security definer set search_path = public as $$
-begin
-  if not public.is_owner() then raise exception 'Only the owner can change roles'; end if;
-  if p_role not in ('employee', 'admin') then raise exception 'Invalid role'; end if;
-  if p_user_id = auth.uid() then raise exception 'You cannot change your own role'; end if;
-  update public.profiles set role = p_role
-   where id = p_user_id and org_id = public.current_org() and role <> 'owner';
-  if not found then raise exception 'Member not found in your organization'; end if;
-end;
-$$;
-
 create or replace function public.transfer_ownership(p_user_id uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare v_org uuid;
@@ -176,8 +164,7 @@ end;
 $$;
 
 grant execute on function
-  public.is_owner(), public.remove_member(uuid),
-  public.set_member_role(uuid, text), public.transfer_ownership(uuid)
+  public.is_owner(), public.remove_member(uuid), public.transfer_ownership(uuid)
 to authenticated;
 
 -- The caller's organization id

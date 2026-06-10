@@ -10,7 +10,7 @@ function inviteUrl(token) {
 export default function TeamManagement({
   profile, org, members, invitations, categories,
   onChange, onCategoriesChange, onSetNotify, onRenameOrg,
-  onRemoveMember, onSetMemberRole, onTransferOwnership,
+  onRemoveMember, onTransferOwnership,
 }) {
   const [role, setRole] = useState('employee')
   const [email, setEmail] = useState('')

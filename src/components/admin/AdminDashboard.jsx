@@ -132,13 +132,6 @@ export default function AdminDashboard({ profile, onReload }) {
     reloadTeam()
   }
 
-  async function setMemberRole(id, role) {
-    const { error } = await supabase.rpc('set_member_role', { p_user_id: id, p_role: role })
-    if (error) return toast.error(error.message)
-    toast.success('Role updated')
-    reloadTeam()
-  }
-
   async function transferOwnership(id) {
     const { error } = await supabase.rpc('transfer_ownership', { p_user_id: id })
     if (error) return toast.error(error.message)
@@ -244,7 +237,6 @@ export default function AdminDashboard({ profile, onReload }) {
             onSetNotify={setNotifyVacation}
             onRenameOrg={renameOrg}
             onRemoveMember={removeMember}
-            onSetMemberRole={setMemberRole}
             onTransferOwnership={transferOwnership}
           />
         )}
