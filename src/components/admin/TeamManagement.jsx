@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
+import CategoryManager from './CategoryManager'
 
 function inviteUrl(token) {
   return `${window.location.origin}/?invite=${token}`
 }
 
-export default function TeamManagement({ profile, org, members, invitations, onChange, onSetNotify, onRenameOrg }) {
+export default function TeamManagement({ profile, org, members, invitations, categories, onChange, onCategoriesChange, onSetNotify, onRenameOrg }) {
   const [role, setRole] = useState('employee')
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
@@ -79,6 +80,9 @@ export default function TeamManagement({ profile, org, members, invitations, onC
           </button>
         </form>
       </div>
+
+      {/* Activity categories */}
+      <CategoryManager orgId={profile.org_id} categories={categories} onChange={onCategoriesChange} />
 
       {/* Notification setting */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">

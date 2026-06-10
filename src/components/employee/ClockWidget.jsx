@@ -29,9 +29,18 @@ function todaySeconds(punches, now) {
   return total
 }
 
-export default function ClockWidget({ name, activePunch, punches, onClockIn, onClockOut }) {
+export default function ClockWidget({
+  name, activePunch, punches, categories = [], activeSegment,
+  onClockIn, onSwitch, onClockOut,
+}) {
   const [now, setNow] = useState(new Date())
+  const [selectedCat, setSelectedCat] = useState('')
   const celebratedRef = useRef(false)
+
+  const hasCategories = categories.length > 0
+  const currentCatName = activeSegment?.category_id
+    ? categories.find(c => c.id === activeSegment.category_id)?.name || 'Uncategorized'
+    : 'Uncategorized'
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -125,11 +134,46 @@ export default function ClockWidget({ name, activePunch, punches, onClockIn, onC
           )}
         </div>
 
+        {/* Current activity (while clocked in) */}
+        {activePunch && hasCategories && (
+          <div className="mt-4 w-full max-w-xs">
+            <label className="block text-xs font-medium text-gray-500 mb-1">Current activity</label>
+            <select
+              value={activeSegment?.category_id || ''}
+              onChange={e => onSwitch(e.target.value || null)}
+              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Uncategorized</option>
+              {categories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-400 mt-1">Switching logs the time so far under "{currentCatName}".</p>
+          </div>
+        )}
+
+        {/* Category picker (before clocking in) */}
+        {!activePunch && hasCategories && (
+          <div className="mt-4 w-full max-w-xs">
+            <label className="block text-xs font-medium text-gray-500 mb-1">What will you work on? (optional)</label>
+            <select
+              value={selectedCat}
+              onChange={e => setSelectedCat(e.target.value)}
+              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Choose later</option>
+              {categories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Action button */}
         <div className="mt-4 w-full max-w-xs">
           {!activePunch ? (
             <button
-              onClick={onClockIn}
+              onClick={() => onClockIn(selectedCat || null)}
               className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold rounded-2xl py-4 text-base shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all"
             >
               Clock In

@@ -42,7 +42,7 @@ function downloadCSV(filename, rows) {
   URL.revokeObjectURL(url)
 }
 
-export default function Reports({ punches }) {
+export default function Reports({ punches, segments = [] }) {
   const [period, setPeriod] = useState('this_week')
 
   const [start, end] = periodRange(period)
@@ -73,6 +73,22 @@ export default function Reports({ punches }) {
   }, [inRange])
 
   const grandTotal = totals.reduce((s, t) => s + t.minutes, 0)
+
+  // Activity breakdown — completed segments in range, grouped by category
+  const byCategory = useMemo(() => {
+    const map = new Map()
+    for (const s of segments) {
+      if (!s.ended_at) continue
+      const t = new Date(s.started_at)
+      if ((start && t < start) || (end && t > end)) continue
+      const name = s.activity_categories?.name || 'Uncategorized'
+      const mins = differenceInMinutes(new Date(s.ended_at), new Date(s.started_at))
+      map.set(name, (map.get(name) || 0) + Math.max(0, mins))
+    }
+    return [...map.entries()].map(([name, minutes]) => ({ name, minutes })).sort((a, b) => b.minutes - a.minutes)
+  }, [segments, start, end])
+
+  const categoryTotal = byCategory.reduce((s, c) => s + c.minutes, 0)
 
   function exportCsv() {
     const header = ['Employee', 'Email', 'Date', 'Clock In', 'Clock Out', 'Hours (decimal)']
@@ -163,6 +179,37 @@ export default function Reports({ punches }) {
           </table>
         )}
       </div>
+
+      {/* Activity breakdown */}
+      {byCategory.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-900">Time by activity</h3>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {byCategory.map(c => {
+              const pct = categoryTotal ? Math.round((c.minutes / categoryTotal) * 100) : 0
+              return (
+                <div key={c.name} className="px-4 py-3">
+                  <div className="flex items-center justify-between text-sm mb-1.5">
+                    <span className="font-medium text-gray-800">{c.name}</span>
+                    <span className="text-gray-500">
+                      <span className="font-mono text-gray-800">{fmtHours(c.minutes)}</span>
+                      <span className="text-gray-400"> · {pct}%</span>
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -15,6 +15,8 @@ export default function AdminDashboard({ profile, onReload }) {
   const [invitations, setInvitations] = useState([])
   const [punches, setPunches] = useState([])
   const [vacations, setVacations] = useState([])
+  const [categories, setCategories] = useState([])
+  const [segments, setSegments] = useState([])
   const [loading, setLoading] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
 
@@ -30,6 +32,8 @@ export default function AdminDashboard({ profile, onReload }) {
       { data: invData },
       { data: punchData },
       { data: vacData },
+      { data: catData },
+      { data: segData },
     ] = await Promise.all([
       supabase.from('organizations').select('*').eq('id', profile.org_id).single(),
       supabase.from('profiles').select('*').eq('org_id', profile.org_id).order('full_name'),
@@ -43,13 +47,36 @@ export default function AdminDashboard({ profile, onReload }) {
         .from('vacation_requests')
         .select('*, profiles!vacation_requests_user_id_fkey(full_name, email)')
         .order('created_at', { ascending: false }),
+      supabase
+        .from('activity_categories')
+        .select('*')
+        .eq('org_id', profile.org_id)
+        .eq('archived', false)
+        .order('sort_order'),
+      supabase
+        .from('time_segments')
+        .select('*, activity_categories(name)')
+        .order('started_at', { ascending: false })
+        .limit(2000),
     ])
     if (orgData) setOrg(orgData)
     if (memberData) setMembers(memberData)
     if (invData) setInvitations(invData)
     if (punchData) setPunches(punchData)
     if (vacData) setVacations(vacData)
+    if (catData) setCategories(catData)
+    if (segData) setSegments(segData)
     setLoading(false)
+  }
+
+  async function reloadCategories() {
+    const { data } = await supabase
+      .from('activity_categories')
+      .select('*')
+      .eq('org_id', profile.org_id)
+      .eq('archived', false)
+      .order('sort_order')
+    if (data) setCategories(data)
   }
 
   async function reloadTeam() {
@@ -176,7 +203,7 @@ export default function AdminDashboard({ profile, onReload }) {
         ) : tab === 'time' ? (
           <EmployeeTimeView employees={employees} punches={punches} />
         ) : tab === 'reports' ? (
-          <Reports punches={punches} />
+          <Reports punches={punches} segments={segments} />
         ) : tab === 'calendar' ? (
           <Calendar vacations={vacations} />
         ) : tab === 'vacation' ? (
@@ -187,7 +214,9 @@ export default function AdminDashboard({ profile, onReload }) {
             org={org}
             members={members}
             invitations={invitations}
+            categories={categories}
             onChange={reloadTeam}
+            onCategoriesChange={reloadCategories}
             onSetNotify={setNotifyVacation}
             onRenameOrg={renameOrg}
           />

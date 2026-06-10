@@ -14,6 +14,8 @@ export default function EmployeeDashboard({ profile, onReload }) {
   const [activePunch, setActivePunch] = useState(null)
   const [punches, setPunches] = useState([])
   const [vacations, setVacations] = useState([])
+  const [categories, setCategories] = useState([])
+  const [activeSegment, setActiveSegment] = useState(null) // open segment of the active punch
   const [tab, setTab] = useState('time') // 'time' | 'vacation'
   const [editor, setEditor] = useState(null) // null = closed, { punch } = open
   const [showSettings, setShowSettings] = useState(false)
@@ -23,7 +25,7 @@ export default function EmployeeDashboard({ profile, onReload }) {
   }, [])
 
   async function loadData() {
-    const [{ data: punchData }, { data: vacData }] = await Promise.all([
+    const [{ data: punchData }, { data: vacData }, { data: catData }] = await Promise.all([
       supabase
         .from('time_punches')
         .select('*')
@@ -35,30 +37,80 @@ export default function EmployeeDashboard({ profile, onReload }) {
         .select('*')
         .eq('user_id', profile.id)
         .order('created_at', { ascending: false }),
+      profile.org_id
+        ? supabase
+            .from('activity_categories')
+            .select('*')
+            .eq('org_id', profile.org_id)
+            .eq('archived', false)
+            .order('sort_order')
+        : Promise.resolve({ data: [] }),
     ])
 
+    if (catData) setCategories(catData)
+    if (vacData) setVacations(vacData)
     if (punchData) {
       setPunches(punchData)
       const open = punchData.find(p => !p.punch_out)
       setActivePunch(open || null)
+      if (open) {
+        const { data: seg } = await supabase
+          .from('time_segments')
+          .select('*')
+          .eq('punch_id', open.id)
+          .is('ended_at', null)
+          .order('started_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        setActiveSegment(seg || null)
+      } else {
+        setActiveSegment(null)
+      }
     }
-    if (vacData) setVacations(vacData)
   }
 
-  async function handleClockIn() {
+  async function handleClockIn(categoryId) {
+    const now = new Date().toISOString()
     const { data, error } = await supabase
       .from('time_punches')
-      .insert({ user_id: profile.id, punch_in: new Date().toISOString() })
+      .insert({ user_id: profile.id, punch_in: now })
       .select()
       .single()
     if (error) return toast.error(error.message)
     setActivePunch(data)
     setPunches(prev => [data, ...prev])
+    // Open the first activity segment (category optional)
+    const { data: seg } = await supabase
+      .from('time_segments')
+      .insert({ punch_id: data.id, user_id: profile.id, category_id: categoryId || null, started_at: now })
+      .select()
+      .single()
+    setActiveSegment(seg || null)
     toast.success('Clocked in!')
+  }
+
+  async function switchActivity(categoryId) {
+    const now = new Date().toISOString()
+    // Close the current open segment, then open a new one
+    if (activeSegment) {
+      await supabase.from('time_segments').update({ ended_at: now }).eq('id', activeSegment.id)
+    }
+    const { data: seg, error } = await supabase
+      .from('time_segments')
+      .insert({ punch_id: activePunch.id, user_id: profile.id, category_id: categoryId || null, started_at: now })
+      .select()
+      .single()
+    if (error) return toast.error(error.message)
+    setActiveSegment(seg)
+    toast.success('Activity switched')
   }
 
   async function handleClockOut() {
     const now = new Date().toISOString()
+    // Close the open activity segment first
+    if (activeSegment) {
+      await supabase.from('time_segments').update({ ended_at: now }).eq('id', activeSegment.id)
+    }
     const { data, error } = await supabase
       .from('time_punches')
       .update({ punch_out: now })
@@ -67,6 +119,7 @@ export default function EmployeeDashboard({ profile, onReload }) {
       .single()
     if (error) return toast.error(error.message)
     setActivePunch(null)
+    setActiveSegment(null)
     setPunches(prev => prev.map(p => (p.id === data.id ? data : p)))
     toast.success('Clocked out!')
   }
@@ -180,7 +233,10 @@ export default function EmployeeDashboard({ profile, onReload }) {
               name={profile.full_name}
               activePunch={activePunch}
               punches={punches}
+              categories={categories}
+              activeSegment={activeSegment}
               onClockIn={handleClockIn}
+              onSwitch={switchActivity}
               onClockOut={handleClockOut}
             />
             <PunchHistory
