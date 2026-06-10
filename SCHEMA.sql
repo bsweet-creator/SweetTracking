@@ -334,3 +334,32 @@ grant  insert (id, email, full_name) on public.profiles to authenticated;
 -- Vacation status changes only via review_vacation() (admin-only RPC).
 -- Employees can create requests but cannot approve their own.
 revoke update on public.vacation_requests from authenticated;
+
+-- ============================================================
+-- Function EXECUTE hardening (revoke PUBLIC default; grant per role)
+-- ============================================================
+revoke execute on function public.handle_new_user() from public;
+
+revoke execute on function public.current_org() from public;
+revoke execute on function public.is_admin()    from public;
+revoke execute on function public.is_owner()    from public;
+grant  execute on function public.current_org(), public.is_admin(), public.is_owner() to authenticated;
+
+revoke execute on function public.create_organization(text)        from public;
+revoke execute on function public.accept_invitation(text)          from public;
+revoke execute on function public.review_vacation(uuid, text, text) from public;
+revoke execute on function public.remove_member(uuid)              from public;
+revoke execute on function public.transfer_ownership(uuid)         from public;
+grant  execute on function
+  public.create_organization(text), public.accept_invitation(text),
+  public.review_vacation(uuid, text, text), public.remove_member(uuid),
+  public.transfer_ownership(uuid)
+to authenticated;
+
+-- Signup page looks up invites before login → anon needed here
+revoke execute on function public.get_invitation(text) from public;
+grant  execute on function public.get_invitation(text) to anon, authenticated;
+
+-- Edge-function only (returns admin emails)
+revoke execute on function public.vacation_notify_targets(uuid) from public, anon, authenticated;
+grant  execute on function public.vacation_notify_targets(uuid) to service_role;
