@@ -17,10 +17,12 @@ function toISO(local) {
 const inputClass =
   'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 
-export default function PunchEditor({ punch, onClose, onSave }) {
+export default function PunchEditor({ punch, segments = [], categories = [], onClose, onSave }) {
   const isNew = !punch
+  const multiSegment = segments.length > 1
   const [punchIn, setPunchIn] = useState(toLocalInput(punch?.punch_in) || toLocalInput(new Date().toISOString()))
   const [punchOut, setPunchOut] = useState(toLocalInput(punch?.punch_out))
+  const [categoryId, setCategoryId] = useState(segments.length === 1 ? (segments[0].category_id || '') : '')
   const [busy, setBusy] = useState(false)
 
   async function handleSubmit(e) {
@@ -33,6 +35,7 @@ export default function PunchEditor({ punch, onClose, onSave }) {
     await onSave({
       punch_in: toISO(punchIn),
       punch_out: toISO(punchOut),
+      category_id: categoryId || null,
     })
     setBusy(false)
   }
@@ -70,6 +73,28 @@ export default function PunchEditor({ punch, onClose, onSave }) {
               className={inputClass}
             />
           </div>
+
+          {categories.length > 0 && (
+            multiSegment ? (
+              <p className="text-xs text-gray-400">
+                This entry has multiple activities logged — edit the times here; activity tags are kept as recorded.
+              </p>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Activity (optional)</label>
+                <select
+                  value={categoryId}
+                  onChange={e => setCategoryId(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Uncategorized</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            )
+          )}
 
           <div className="flex gap-2 pt-1">
             <button

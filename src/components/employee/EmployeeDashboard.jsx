@@ -129,16 +129,41 @@ export default function EmployeeDashboard({ profile, onReload }) {
     setActivePunch(list.find(p => !p.punch_out) || null)
   }
 
+  // Open the editor; for an existing punch, load its segments first
+  async function openEditor(punch) {
+    if (!punch) return setEditor({ punch: null, segments: [] })
+    const { data } = await supabase
+      .from('time_segments')
+      .select('*')
+      .eq('punch_id', punch.id)
+      .order('started_at')
+    setEditor({ punch, segments: data || [] })
+  }
+
   async function savePunch(values) {
+    const { punch_in, punch_out, category_id } = values
     if (editor.punch) {
       // Editing an existing entry
       const { data, error } = await supabase
         .from('time_punches')
-        .update({ punch_in: values.punch_in, punch_out: values.punch_out })
+        .update({ punch_in, punch_out })
         .eq('id', editor.punch.id)
         .select()
         .single()
       if (error) return toast.error(error.message)
+      // Keep the single segment in sync (multi-segment entries are left alone)
+      if (editor.segments.length <= 1) {
+        if (editor.segments.length === 1) {
+          await supabase
+            .from('time_segments')
+            .update({ category_id: category_id || null, started_at: punch_in, ended_at: punch_out })
+            .eq('id', editor.segments[0].id)
+        } else if (category_id) {
+          await supabase
+            .from('time_segments')
+            .insert({ punch_id: editor.punch.id, user_id: profile.id, category_id, started_at: punch_in, ended_at: punch_out })
+        }
+      }
       const next = punches.map(p => (p.id === data.id ? data : p))
       setPunches(next)
       syncActive(next)
@@ -147,10 +172,15 @@ export default function EmployeeDashboard({ profile, onReload }) {
       // Adding a manual entry
       const { data, error } = await supabase
         .from('time_punches')
-        .insert({ user_id: profile.id, punch_in: values.punch_in, punch_out: values.punch_out })
+        .insert({ user_id: profile.id, punch_in, punch_out })
         .select()
         .single()
       if (error) return toast.error(error.message)
+      if (category_id) {
+        await supabase
+          .from('time_segments')
+          .insert({ punch_id: data.id, user_id: profile.id, category_id, started_at: punch_in, ended_at: punch_out })
+      }
       const next = [data, ...punches].sort(
         (a, b) => new Date(b.punch_in) - new Date(a.punch_in)
       )
@@ -241,8 +271,8 @@ export default function EmployeeDashboard({ profile, onReload }) {
             />
             <PunchHistory
               punches={punches}
-              onAdd={() => setEditor({ punch: null })}
-              onEdit={punch => setEditor({ punch })}
+              onAdd={() => openEditor(null)}
+              onEdit={openEditor}
               onDelete={deletePunch}
             />
           </div>
@@ -259,6 +289,8 @@ export default function EmployeeDashboard({ profile, onReload }) {
       {editor && (
         <PunchEditor
           punch={editor.punch}
+          segments={editor.segments}
+          categories={categories}
           onClose={() => setEditor(null)}
           onSave={savePunch}
         />
